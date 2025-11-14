@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Horizons Group - Holiday Gift Collection</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const BHGGiftForm = () => {
+          const [formData, setFormData] = useState({
+            name: '',
+            company: '',
+            shirtType: '',
+            shirtSize: '',
+            street: '',
+            city: '',
+            state: '',
+            zipCode: ''
+          });
+          
+          const [errors, setErrors] = useState({});
+          const [isSubmitting, setIsSubmitting] = useState(false);
+          const [isSubmitted, setIsSubmitted] = useState(false);
+          const [consent, setConsent] = useState(false);
+
+          // Parse URL parameters to pre-fill name and company
+          useEffect(() => {
+            const params = new URLSearchParams(window.location.search);
+            const name = params.get('name');
+            const company = params.get('company');
+            
+            if (name || company) {
+              setFormData(prev => ({
+                ...prev,
+                name: name ? decodeURIComponent(name) : '',
+                company: company ? decodeURIComponent(company) : ''
+              }));
+            }
+          }, []);
+
+          const US_STATES = [
+            'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+            'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+            'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+            'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+            'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+          ];
+
+          const validateAddress = () => {
+            const newErrors = {};
+
+            // Street validation
+            if (!formData.street.trim()) {
+              newErrors.street = 'Street address is required';
+            } else if (formData.street.length < 5) {
+              newErrors.street = 'Please enter a complete street address';
+            }
+
+            // City validation
+            if (!formData.city.trim()) {
+              newErrors.city = 'City is required';
+            } else if (!/^[a-zA-Z\s-]+$/.test(formData.city)) {
+              newErrors.city = 'Please enter a valid city name';
+            }
+
+            // State validation
+            if (!formData.state) {
+              newErrors.state = 'State is required';
+            }
+
+            // ZIP code validation
+            if (!formData.zipCode.trim()) {
+              newErrors.zipCode = 'ZIP code is required';
+            } else if (!/^\d{5}(-\d{4})?$/.test(formData.zipCode)) {
+              newErrors.zipCode = 'Please enter a valid ZIP code (e.g., 12345 or 12345-6789)';
+            }
+
+            return newErrors;
+          };
+
+          const validateForm = () => {
+            const newErrors = {};
+
+            if (!formData.name.trim()) newErrors.name = 'Name is required';
+            if (!formData.company.trim()) newErrors.company = 'Company is required';
+            if (!formData.shirtType) newErrors.shirtType = 'Please select a shirt type';
+            if (!formData.shirtSize) newErrors.shirtSize = 'Please select a size';
+            if (!consent) newErrors.consent = 'Please agree to the privacy terms';
+
+            const addressErrors = validateAddress();
+            Object.assign(newErrors, addressErrors);
+
+            return newErrors;
+          };
+
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            
+            const validationErrors = validateForm();
+            
+            if (Object.keys(validationErrors).length > 0) {
+              setErrors(validationErrors);
+              return;
+            }
+
+            setIsSubmitting(true);
+            setErrors({});
+
+            try {
+              // IMPORTANT: Replace this URL with your Google Apps Script URL
+              const SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL_HERE';
+              
+              const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  ...formData,
+                  timestamp: new Date().toISOString()
+                })
+              });
+
+              // Due to no-cors mode, we can't read the response, but if no error was thrown, assume success
+              setIsSubmitted(true);
+              
+            } catch (error) {
+              console.error('Submission error:', error);
+              setErrors({ submit: 'There was an error submitting your information. Please try again.' });
+            } finally {
+              setIsSubmitting(false);
+            }
+          };
+
+          const handleChange = (e) => {
+            const { name, value } = e.target;
+            setFormData(prev => ({
+              ...prev,
+              [name]: value
+            }));
+            // Clear error for this field when user starts typing
+            if (errors[name]) {
+              setErrors(prev => ({
+                ...prev,
+                [name]: ''
+              }));
+            }
+          };
+
+          if (isSubmitted) {
+            return (
+              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+                <div className="max-w-2xl w-full bg-white rounded-lg shadow-xl p-8 text-center">
+                  <div className="mb-6">
+                    <svg className="w-20 h-20 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-800 mb-4">Thank You!</h2>
+                  <p className="text-lg text-gray-600 mb-2">Your information has been received.</p>
+                  <p className="text-gray-600">We'll send your holiday gift to the address provided.</p>
+                  <p className="text-sm text-gray-500 mt-6">Happy Holidays from Blue Horizons Group!</p>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
+              <div className="max-w-3xl mx-auto">
+                {/* Header */}
+                <div className="bg-white rounded-t-lg shadow-xl p-8 border-b-4 border-blue-600">
+                  <div className="text-center">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Blue Horizons Group</h1>
+                    <p className="text-xl text-blue-600 font-semibold">Holiday Gift Collection</p>
+                  </div>
+                </div>
+
+                {/* Form */}
+                <div className="bg-white rounded-b-lg shadow-xl p-8">
+                  <p className="text-gray-700 mb-6 text-center">
+                    Thank you for being a valued partner! Please provide your information below so we can send you a holiday gift.
+                  </p>
+
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Name and Company */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+                          Full Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                            errors.name ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                          placeholder="John Doe"
+                          readOnly={new URLSearchParams(window.location.search).get('name')}
+                        />
+                        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                      </div>
+
+                      <div>
+                        <label htmlFor="company" className="block text-sm font-semibold text-gray-700 mb-2">
+                          Company <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="company"
+                          name="company"
+                          value={formData.company}
+                          onChange={handleChange}
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                            errors.company ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                          placeholder="Company Name"
+                          readOnly={new URLSearchParams(window.location.search).get('company')}
+                        />
+                        {errors.company && <p className="mt-1 text-sm text-red-600">{errors.company}</p>}
+                      </div>
+                    </div>
+
+                    {/* Shirt Type and Size */}
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Shirt Preferences</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label htmlFor="shirtType" className="block text-sm font-semibold text-gray-700 mb-2">
+                            Shirt Type <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            id="shirtType"
+                            name="shirtType"
+                            value={formData.shirtType}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                              errors.shirtType ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="">Select Type</option>
+                            <option value="Unisex">Unisex</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                          </select>
+                          {errors.shirtType && <p className="mt-1 text-sm text-red-600">{errors.shirtType}</p>}
+                        </div>
+
+                        <div>
+                          <label htmlFor="shirtSize" className="block text-sm font-semibold text-gray-700 mb-2">
+                            Size <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            id="shirtSize"
+                            name="shirtSize"
+                            value={formData.shirtSize}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                              errors.shirtSize ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="">Select Size</option>
+                            <option value="S">S - Small</option>
+                            <option value="M">M - Medium</option>
+                            <option value="L">L - Large</option>
+                            <option value="XL">XL - Extra Large</option>
+                            <option value="2XL">2XL - XX-Large</option>
+                            <option value="3XL">3XL - XXX-Large</option>
+                          </select>
+                          {errors.shirtSize && <p className="mt-1 text-sm text-red-600">{errors.shirtSize}</p>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Shipping Address */}
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Shipping Address</h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="street" className="block text-sm font-semibold text-gray-700 mb-2">
+                            Street Address <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            id="street"
+                            name="street"
+                            value={formData.street}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                              errors.street ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="123 Main Street"
+                          />
+                          {errors.street && <p className="mt-1 text-sm text-red-600">{errors.street}</p>}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="md:col-span-1">
+                            <label htmlFor="city" className="block text-sm font-semibold text-gray-700 mb-2">
+                              City <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              id="city"
+                              name="city"
+                              value={formData.city}
+                              onChange={handleChange}
+                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                errors.city ? 'border-red-500' : 'border-gray-300'
+                              }`}
+                              placeholder="City"
+                            />
+                            {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city}</p>}
+                          </div>
+
+                          <div>
+                            <label htmlFor="state" className="block text-sm font-semibold text-gray-700 mb-2">
+                              State <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              id="state"
+                              name="state"
+                              value={formData.state}
+                              onChange={handleChange}
+                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                errors.state ? 'border-red-500' : 'border-gray-300'
+                              }`}
+                            >
+                              <option value="">Select</option>
+                              {US_STATES.map(state => (
+                                <option key={state} value={state}>{state}</option>
+                              ))}
+                            </select>
+                            {errors.state && <p className="mt-1 text-sm text-red-600">{errors.state}</p>}
+                          </div>
+
+                          <div>
+                            <label htmlFor="zipCode" className="block text-sm font-semibold text-gray-700 mb-2">
+                              ZIP Code <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              id="zipCode"
+                              name="zipCode"
+                              value={formData.zipCode}
+                              onChange={handleChange}
+                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                errors.zipCode ? 'border-red-500' : 'border-gray-300'
+                              }`}
+                              placeholder="12345"
+                              maxLength="10"
+                            />
+                            {errors.zipCode && <p className="mt-1 text-sm text-red-600">{errors.zipCode}</p>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Privacy Consent */}
+                    <div className="border-t pt-6">
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          id="consent"
+                          checked={consent}
+                          onChange={(e) => {
+                            setConsent(e.target.checked);
+                            if (errors.consent) {
+                              setErrors(prev => ({ ...prev, consent: '' }));
+                            }
+                          }}
+                          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="consent" className="ml-3 text-sm text-gray-600">
+                          I consent to Blue Horizons Group collecting and using my shipping address solely for the purpose of 
+                          sending holiday gifts. This information will be kept confidential and will not be shared with third 
+                          parties or used for any other purpose. <span className="text-red-500">*</span>
+                        </label>
+                      </div>
+                      {errors.consent && <p className="mt-2 text-sm text-red-600">{errors.consent}</p>}
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="pt-4">
+                      {errors.submit && (
+                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-600">{errors.submit}</p>
+                        </div>
+                      )}
+                      
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className={`w-full py-4 px-6 rounded-lg text-white font-semibold text-lg transition-all ${
+                          isSubmitting
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl'
+                        }`}
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center justify-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Submitting...
+                          </span>
+                        ) : (
+                          'Submit Information'
+                        )}
+                      </button>
+                    </div>
+                  </form>
+
+                  <p className="text-xs text-gray-500 text-center mt-6">
+                    Questions? Contact us at info@bluehorizonsgroup.com
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<BHGGiftForm />);
+    </script>
+</body>
+</html>
